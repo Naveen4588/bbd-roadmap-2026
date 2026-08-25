@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central BBD Road Map 2026</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f4f4; color: #222; font-size: 13px; }
+
+/* ── Header ── */
+.header {
+  background: linear-gradient(135deg, #F7971E 0%, #FFD200 100%);
+  padding: 20px 28px 16px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+}
+.header h1 { font-size: 20px; font-weight: 800; color: #1a1a1a; letter-spacing: -0.3px; }
+.header p  { font-size: 12px; color: #4a3000; margin-top: 3px; }
+.header-right { text-align: right; font-size: 11px; color: #4a3000; }
+.header-right strong { display: block; font-size: 22px; font-weight: 800; color: #1a1a1a; }
+
+/* ── Stats bar ── */
+.stats-bar {
+  display: flex; gap: 10px; padding: 12px 28px; flex-wrap: wrap;
+  background: #fff; border-bottom: 1px solid #e5e5e5;
+}
+.stat {
+  display: flex; align-items: center; gap: 8px; padding: 7px 14px;
+  border-radius: 20px; font-size: 12px; font-weight: 600; cursor: default;
+}
+.stat .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.stat-total    { background: #f2f2f2; color: #333; }
+.stat-done     { background: #e6f9ee; color: #1a7a3c; }
+.stat-progress { background: #e8f2ff; color: #1a56c4; }
+.stat-review   { background: #fffbe6; color: #b07a00; }
+.stat-blocked  { background: #ffeaea; color: #c41a1a; }
+.stat-nostart  { background: #f5f5f5; color: #666; }
+
+/* ── Overall progress ── */
+.overall-progress {
+  padding: 10px 28px; background: #fff; border-bottom: 1px solid #e5e5e5;
+  display: flex; align-items: center; gap: 12px;
+}
+.overall-progress label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+.big-bar { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+.big-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #F7971E, #4CAF50); transition: width 0.4s ease; }
+.big-pct { font-size: 13px; font-weight: 700; color: #333; min-width: 36px; text-align: right; }
+
+/* ── Controls ── */
+.controls {
+  padding: 10px 28px; background: #fff; border-bottom: 2px solid #e5e5e5;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.controls span { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 2px; }
+.controls select, .controls button {
+  padding: 5px 10px; border: 1px solid #ddd; border-radius: 6px;
+  font-size: 12px; cursor: pointer; background: white; color: #333;
+}
+.controls select:focus { outline: none; border-color: #F7971E; }
+.btn-reset { background: #f5f5f5 !important; }
+.btn-print  { margin-left: auto; background: #1a1a1a !important; color: #fff !important; border-color: #1a1a1a !important; }
+.btn-export { background: #e8f5e9 !important; color: #1a7a3c !important; border-color: #a5d6a7 !important; font-weight: 600; }
+.btn-import { padding: 5px 10px; border: 1px solid #bbdefb; border-radius: 6px; font-size: 12px; cursor: pointer; background: #e3f2fd; color: #1a56c4; font-weight: 600; }
+.btn-save   { background: #F7971E !important; color: #fff !important; border-color: #e08010 !important; font-weight: 700; font-size: 13px; padding: 6px 16px !important; }
+.btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+.sync-status { font-size: 11px; color: #888; margin-left: 6px; }
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(255,255,255,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999; font-size: 15px; color: #555; font-weight: 600;
+}
+
+/* ── Month block ── */
+.month-block { margin-bottom: 0; }
+.month-header {
+  background: #FFF8E1; padding: 9px 28px;
+  border-top: 2px solid #FFD200; border-bottom: 1px solid #ffe082;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.month-name { font-weight: 800; font-size: 14px; color: #b34a00; }
+.month-meta { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #888; }
+.month-bar { width: 80px; height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
+.month-bar-fill { height: 100%; border-radius: 3px; background: #4CAF50; transition: width 0.3s; }
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: white; }
+thead th {
+  background: #2c2c2c; color: #ddd; padding: 8px 10px;
+  font-size: 10px; font-weight: 700; text-align: left;
+  white-space: nowrap; text-transform: uppercase; letter-spacing: 0.4px;
+  position: sticky; top: 0; z-index: 5;
+}
+tbody tr { border-bottom: 1px solid #f0f0f0; transition: background 0.1s; }
+tbody tr:hover { background: #fffbf2; }
+tbody tr.theme-first td { border-top: 1px solid #f5f5f5; }
+td { padding: 7px 10px; vertical-align: middle; }
+
+.td-theme { font-weight: 700; color: #6d3a00; font-size: 11px; white-space: nowrap; }
+.td-action { color: #222; max-width: 200px; line-height: 1.4; }
+.td-tat { white-space: nowrap; color: #777; font-size: 11px; }
+.td-owner { font-size: 11px; color: #333; }
+.td-team { font-size: 10px; color: #666; max-width: 150px; line-height: 1.3; }
+
+/* Priority */
+.pri {
+  display: inline-block; padding: 2px 7px; border-radius: 10px;
+  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.pri-High   { background: #fde8e8; color: #b91c1c; }
+.pri-Medium { background: #fff4e0; color: #c05000; }
+.pri-Low    { background: #e8f5e9; color: #1a7a3c; }
+
+/* Status select */
+.status-sel {
+  padding: 4px 7px; border-radius: 12px; border: 1.5px solid transparent;
+  font-size: 11px; font-weight: 700; cursor: pointer; min-width: 110px;
+  appearance: none; -webkit-appearance: none; text-align: center;
+  transition: background 0.2s;
+}
+.s-NS  { background: #f0f0f0; color: #666;    border-color: #ddd; }
+.s-IP  { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+.s-RV  { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+.s-DN  { background: #dcfce7; color: #15803d; border-color: #86efac; }
+.s-BL  { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+/* Pct */
+.pct-sel {
+  width: 58px; padding: 4px 4px; border: 1px solid #e0e0e0;
+  border-radius: 6px; font-size: 11px; text-align: center;
+  background: white; cursor: pointer;
+}
+
+/* Notes */
+/* Editable text cells */
+.edit-in {
+  width: 100%; padding: 3px 5px; border: 1px solid transparent;
+  border-radius: 4px; font-size: 11px; font-family: inherit;
+  background: transparent; color: #333;
+  transition: border-color 0.15s, background 0.15s;
+}
+.edit-in:hover { border-color: #ddd; background: #fafafa; }
+.edit-in:focus { outline: none; border-color: #F7971E; background: white; }
+
+.edit-ta {
+  width: 100%; padding: 3px 5px; border: 1px solid transparent;
+  border-radius: 4px; font-size: 12px; font-family: inherit; color: #222;
+  background: transparent; resize: none; height: 34px; line-height: 1.4;
+  transition: border-color 0.15s, background 0.15s;
+}
+.edit-ta:hover { border-color: #ddd; background: #fafafa; }
+.edit-ta:focus { outline: none; border-color: #F7971E; background: white; height: 52px; }
+
+.notes-ta {
+  width: 100%; padding: 4px 6px; border: 1px solid #eee;
+  border-radius: 5px; font-size: 11px; resize: none; height: 30px;
+  font-family: inherit; color: #555; background: #fafafa;
+  transition: border-color 0.15s;
+}
+.notes-ta:focus { outline: none; border-color: #F7971E; background: white; }
+
+/* Drive link */
+.link-in {
+  width: 100%; padding: 4px 6px; border: 1px solid #eee;
+  border-radius: 5px; font-size: 11px; color: #1a56c4; background: #fafafa;
+  transition: border-color 0.15s;
+}
+.link-in:focus { outline: none; border-color: #F7971E; background: white; }
+
+.agency-yes {
+  display: inline-block; padding: 2px 6px; border-radius: 8px;
+  font-size: 10px; font-weight: 700; background: #e8eaf6; color: #3949ab;
+}
+
+/* New tag */
+.new-tag {
+  display: inline-block; padding: 1px 5px; border-radius: 6px;
+  font-size: 9px; font-weight: 800; background: #dcfce7; color: #15803d;
+  margin-left: 4px; vertical-align: middle; text-transform: uppercase;
+}
+
+/* Footer */
+footer {
+  text-align: center; padding: 14px; font-size: 11px; color: #aaa;
+  background: white; border-top: 1px solid #eee; margin-top: 1px;
+}
+
+/* Empty state */
+.empty { text-align: center; padding: 40px; color: #bbb; font-size: 13px; }
+
+@media print {
+  .controls, footer, .stats-bar { display: none !important; }
+  .month-header { background: #fff9e0 !important; -webkit-print-color-adjust: exact; }
+  thead th { background: #333 !important; color: white !important; -webkit-print-color-adjust: exact; }
+  body { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Central BBD Road Map &amp; Bandwidth Plan</h1>
+    <p>Big Billion Days 2026 — Design &amp; Marketing Roadmap &nbsp;|&nbsp; June – October 2026</p>
+  </div>
+  <div class="header-right">
+    <strong id="overallPct">0%</strong>
+    Overall Complete
+  </div>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="overall-progress">
+  <label>Overall Progress</label>
+  <div class="big-bar"><div class="big-bar-fill" id="bigBar" style="width:0%"></div></div>
+  <span class="big-pct" id="bigPct">0%</span>
+</div>
+
+<div class="controls">
+  <span>Filter</span>
+  <select id="fMonth" onchange="render()">
+    <option value="">All Months</option>
+    <option>June</option><option>July</option><option>August</option>
+    <option>September</option><option>October</option>
+  </select>
+  <select id="fStatus" onchange="render()">
+    <option value="">All Statuses</option>
+    <option value="NS">Not Started</option>
+    <option value="IP">In Progress</option>
+    <option value="RV">Review</option>
+    <option value="DN">Done</option>
+    <option value="BL">Blocked</option>
+  </select>
+  <select id="fPriority" onchange="render()">
+    <option value="">All Priorities</option>
+    <option>High</option><option>Medium</option><option>Low</option>
+  </select>
+  <select id="fTheme" onchange="render()">
+    <option value="">All Themes</option>
+  </select>
+  <button class="btn-reset" onclick="resetFilters()">Reset</button>
+  <button class="btn-print" onclick="window.print()">Print / Export PDF</button>
+  <button id="saveBtn" class="btn-save" onclick="saveToGitHub()">💾 Save Online</button>
+  <span id="syncStatus" class="sync-status"></span>
+</div>
+
+<div id="container"></div>
+<footer>Central BBD Road Map 2026 &nbsp;|&nbsp; Click Status or % to update &nbsp;|&nbsp; Last updated: <span id="lastUpdated"></span></footer>
+
+<script>
+const STATUSES = {
+  NS: "Not Started",
+  IP: "In Progress",
+  RV: "Review",
+  DN: "Done",
+  BL: "Blocked"
+};
+const STATUS_CLASS = { NS:"s-NS", IP:"s-IP", RV:"s-RV", DN:"s-DN", BL:"s-BL" };
+
+// ─────────────────────────────────────────────
+// DATA  (2026 dates, same team names as 2023)
+// ─────────────────────────────────────────────
+const RAW = [
+  // ── JUNE ──
+  { mo:"June", th:"Marketing Brief",       ac:"Cohorts, barrier & aspiration discussions",            tat:"",              own:"Diptanu / Nidhesh",                  tm:"Diptanu, Nidhesh & Akshay",                     ag:false, pri:"High"   },
+  { mo:"June", th:"Brainstorming",          ac:"Reference of BBD — past editions",                    tat:"Jun 1–16",      own:"Diptanu / Nidhesh",                  tm:"Everyone",                                      ag:false, pri:"High"   },
+  { mo:"June", th:"Brainstorming",          ac:"Ideation & copy storyline references",                tat:"Jun 1–16",      own:"Diptanu / Nidhesh",                  tm:"Venkat, Dhimoyee, Nisrin, Rahul",               ag:false, pri:"High"   },
+  { mo:"June", th:"Brainstorming",          ac:"Competitive analysis",                                tat:"Jun 1–30",      own:"Diptanu / Nidhesh",                  tm:"Aneesh pod",                                    ag:true,  pri:"Medium" },
+  { mo:"June", th:"Brainstorming",          ac:"Mood board creation",                                 tat:"Jun 19–30",     own:"Diptanu / Nidhesh",                  tm:"Aneesh pod",                                    ag:true,  pri:"Medium" },
+  { mo:"June", th:"Brainstorming",          ac:"Color theory exploration",                            tat:"Jun 19–30",     own:"Diptanu / Nidhesh",                  tm:"Aneesh pod",                                    ag:true,  pri:"Medium" },
+  { mo:"June", th:"Brainstorming",          ac:"Typography direction",                                tat:"Jun 19–30",     own:"Diptanu / Nidhesh",                  tm:"Aneesh pod",                                    ag:true,  pri:"Medium" },
+  { mo:"June", th:"Brainstorming",          ac:"Visual hierarchy guidelines",                         tat:"Jun 19–30",     own:"Diptanu / Nidhesh",                  tm:"Aneesh pod",                                    ag:true,  pri:"Medium" },
+  { mo:"June", th:"Brainstorming",          ac:"Storefront collaboration kick-off",                   tat:"Jun 30",        own:"Diptanu / Nidhesh",                  tm:"Storefront team",                               ag:false, pri:"Medium" },
+  { mo:"June", th:"BBD Awareness Week",     ac:"BBD QR Code",                                        tat:"Jun 5–9",       own:"Diptanu",                            tm:"Diptanu (open to volunteer)",                   ag:false, pri:"Low"    },
+  { mo:"June", th:"BBD Awareness Week",     ac:"Reference / Memory of BBD",                          tat:"Jun 5–9",       own:"Diptanu",                            tm:"Diptanu (open to volunteer)",                   ag:false, pri:"Low"    },
+  { mo:"June", th:"BBD Awareness Week",     ac:"Slogan creation",                                    tat:"Jun 5–9",       own:"Diptanu",                            tm:"Diptanu (open to volunteer)",                   ag:false, pri:"Low"    },
+  { mo:"June", th:"BBD Awareness Week",     ac:"Memes & identity visuals",                           tat:"Jun 5–9",       own:"Diptanu",                            tm:"Diptanu (open to volunteer)",                   ag:false, pri:"Low"    },
+  { mo:"June", th:"BBD Awareness Week",     ac:"Color & typography for awareness",                   tat:"Jun 5–9",       own:"Diptanu",                            tm:"Diptanu (open to volunteer)",                   ag:false, pri:"Low"    },
+  { mo:"June", th:"BBD Awareness Week",     ac:"Testimonials",                                       tat:"Jun 5–9",       own:"Diptanu",                            tm:"Diptanu (open to volunteer)",                   ag:false, pri:"Low"    },
+  { mo:"June", th:"BBD Awareness Week",     ac:"Fun activities with team",                           tat:"Jun 5–9",       own:"Diptanu",                            tm:"Diptanu (open to volunteer)",                   ag:false, pri:"Low"    },
+  { mo:"June", th:"Visual Delight",         ac:"Consistency standards (ongoing through Sep)",         tat:"Jun 1–Sep 30",  own:"Diptanu / Nidhesh",                  tm:"Aneesh pod",                                    ag:true,  pri:"High"   },
+  { mo:"June", th:"Shopping Funnel",        ac:"Connect with Naveen — understand full scope",         tat:"Jun 1–30",      own:"Akshay, Diptanu",                    tm:"",                                              ag:false, pri:"High"   },
+  { mo:"June", th:"Innovation",             ac:"Widget ideation & exploration",                      tat:"Jun 1–30",      own:"Products team",                      tm:"",                                              ag:false, pri:"Medium" },
+  { mo:"June", th:"Copy Ideation",          ac:"Storytelling, hierarchy & flow",                     tat:"Jun 1–30",      own:"Venkat, Dhimoyee, Nisrin, Rahul",     tm:"Venkat, Dhimoyee, Nisrin, Rahul",               ag:false, pri:"High"   },
+  { mo:"June", th:"Copy Ideation",          ac:"Copy benchmark, consistency & hygiene",              tat:"Jun 1–30",      own:"Venkat, Dhimoyee, Nisrin, Rahul",     tm:"Venkat, Dhimoyee, Nisrin, Rahul",               ag:false, pri:"High"   },
+  { mo:"June", th:"KV Theme",               ac:"KV exploration",                                     tat:"Jun 1–Jul 15",  own:"Diptanu, Nidhesh",                   tm:"Aneesh pod",                                    ag:true,  pri:"High"   },
+  { mo:"June", th:"KV Theme",               ac:"3–5 KV options presentation",                        tat:"Jun 1–Jul 15",  own:"Diptanu, Nidhesh",                   tm:"Aneesh pod",                                    ag:true,  pri:"High"   },
+  { mo:"June", th:"KV Theme",               ac:"Align KV with internal design team",                 tat:"",              own:"Diptanu / Nidhesh",                  tm:"",                                              ag:false, pri:"High"   },
+  { mo:"June", th:"KV Theme",               ac:"Align KV with brand marketing",                      tat:"",              own:"Diptanu / Nidhesh",                  tm:"",                                              ag:false, pri:"High"   },
+
+  // ── JULY ──
+  { mo:"July", th:"Reviews",               ac:"Weekly design team syncs",                            tat:"Every week",    own:"Diptanu / Nidhesh / Venkat",         tm:"One design team",                               ag:false, pri:"High"   },
+  { mo:"July", th:"Reviews",               ac:"Internal Review",                                    tat:"Jul 17",        own:"Diptanu / Nidhesh / Venkat",         tm:"Aneesh pod",                                    ag:true,  pri:"High"   },
+  { mo:"July", th:"Reviews",               ac:"Storefront Review",                                  tat:"Jul 20",        own:"Diptanu / Nidhesh / Venkat",         tm:"All teams",                                     ag:true,  pri:"High"   },
+  { mo:"July", th:"Reviews",               ac:"Stakeholder Review",                                 tat:"Jul 24",        own:"Diptanu / Nidhesh / Venkat",         tm:"Central + Brand Marketing",                     ag:false, pri:"High"   },
+  { mo:"July", th:"Reviews",               ac:"Leaders Review",                                     tat:"Jul 25",        own:"Diptanu / Nidhesh / Venkat",         tm:"Gaurav + Design team",                          ag:false, pri:"High"   },
+  { mo:"July", th:"Reviews",               ac:"DRS",                                                tat:"Jul 30",        own:"Diptanu / Nidhesh / Venkat",         tm:"One design team",                               ag:false, pri:"High"   },
+  { mo:"July", th:"Central Connect",       ac:"Central wireframe requirements",                     tat:"Jul 25",        own:"Radhika / Naveen",                   tm:"Radhika & Team",                                ag:false, pri:"High"   },
+  { mo:"July", th:"Central Connect",       ac:"Category intrigue wireframe",                        tat:"",              own:"Radhika / Naveen",                   tm:"",                                              ag:false, pri:"High"   },
+  { mo:"July", th:"Central Connect",       ac:"Inputs closer cut-off date",                         tat:"",              own:"Radhika / Naveen",                   tm:"Radhika & Team",                                ag:false, pri:"High"   },
+  { mo:"July", th:"Central Connect",       ac:"Any special construct requirements",                  tat:"",              own:"Radhika",                            tm:"Radhika & Team",                                ag:false, pri:"Medium" },
+  { mo:"July", th:"Central Connect",       ac:"Home page takeover plan",                            tat:"",              own:"Radhika",                            tm:"Radhika & Team",                                ag:false, pri:"High"   },
+  { mo:"July", th:"Central Connect",       ac:"Internal landing page wireframe",                    tat:"",              own:"Radhika",                            tm:"Radhika & Team",                                ag:false, pri:"High"   },
+  { mo:"July", th:"Central Connect",       ac:"Final confirmation — intrigue & sale live dates",    tat:"",              own:"Radhika / Naveen",                   tm:"Radhika & Team",                                ag:false, pri:"High"   },
+  { mo:"July", th:"Category Connect",      ac:"Intrigue inputs to be closed",                       tat:"",              own:"Naveen",                             tm:"",                                              ag:false, pri:"High"   },
+  { mo:"July", th:"Category Connect",      ac:"Sale wireframe sign-off",                            tat:"",              own:"Naveen",                             tm:"",                                              ag:false, pri:"High"   },
+  { mo:"July", th:"Category Connect",      ac:"Sale inputs to be closed",                           tat:"",              own:"Naveen",                             tm:"",                                              ag:false, pri:"High"   },
+  { mo:"July", th:"Category Connect",      ac:"Final confirmation — intrigue & sale live dates",    tat:"",              own:"Radhika / Naveen",                   tm:"Radhika & Team",                                ag:false, pri:"High"   },
+  { mo:"July", th:"Marketing Team",        ac:"Initial KV briefing / event requirements",            tat:"Jul 19–26",     own:"Devishi",                            tm:"Devishi & Team",                                ag:false, pri:"High"   },
+  { mo:"July", th:"Marketing Team",        ac:"Align briefing with central & brand marketing",      tat:"",              own:"Devishi",                            tm:"Devishi & Team",                                ag:false, pri:"High"   },
+  { mo:"July", th:"Marketing Team",        ac:"Celebrate use guidelines",                           tat:"",              own:"Devishi",                            tm:"Devishi & Team",                                ag:false, pri:"Medium" },
+  { mo:"July", th:"Marketing Team",        ac:"Photoshoot",                                         tat:"",              own:"Devishi",                            tm:"Devishi & Team",                                ag:false, pri:"Medium" },
+  { mo:"July", th:"Marketing Team",        ac:"Key requirements brief to agency",                   tat:"",              own:"Devishi",                            tm:"Devishi & Team",                                ag:true,  pri:"Medium" },
+
+  // ── AUGUST ──
+  { mo:"August", th:"Design Execution",    ac:"Templates finalization",                              tat:"Aug 1",         own:"Azhar",                              tm:"Nishanth",                                      ag:false, pri:"High"   },
+  { mo:"August", th:"Intrigue",            ac:"Intrigue wireframe",                                 tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:true, pri:"High" },
+  { mo:"August", th:"Intrigue",            ac:"Internal landing page (intrigue)",                   tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:true, pri:"High" },
+  { mo:"August", th:"Intrigue",            ac:"VB banners (intrigue)",                              tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:true, pri:"High" },
+  { mo:"August", th:"Intrigue",            ac:"Gamification constructs",                            tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:false, pri:"Medium" },
+  { mo:"August", th:"Intrigue",            ac:"Home page takeover execution",                       tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:false, pri:"High" },
+  { mo:"August", th:"Sale",                ac:"Sale wireframe",                                     tat:"Aug 22",        own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:true, pri:"High" },
+  { mo:"August", th:"Sale",                ac:"Internal landing page (sale)",                       tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:true, pri:"High" },
+  { mo:"August", th:"Sale",                ac:"VB banners (sale)",                                  tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:true, pri:"High" },
+  { mo:"August", th:"Sale",                ac:"Sale constructs",                                    tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:false, pri:"High" },
+  { mo:"August", th:"Sale",                ac:"Home page takeover (sale)",                          tat:"",              own:"Diptanu / Nidhesh",                  tm:"Venkat, Diptanu, Nidhesh, Harsha, Vishnu, Shejeer, Karan", ag:false, pri:"High" },
+  { mo:"August", th:"BBD Engagement",      ac:"Fun activities planning & execution",                tat:"",              own:"Naveen",                             tm:"",                                              ag:false, pri:"Low"    },
+
+  // ── SEPTEMBER ──
+  { mo:"September", th:"Sponsorships",     ac:"Sponsorship confirmation",                           tat:"Sep 1",         own:"Praveen",                            tm:"Azhar, Harsha",                                 ag:false, pri:"High"   },
+  { mo:"September", th:"Sponsorships",     ac:"Logo & image assets from sponsors",                  tat:"",              own:"Praveen",                            tm:"Azhar, Harsha",                                 ag:false, pri:"High"   },
+  { mo:"September", th:"Sponsorships",     ac:"BBD Specials",                                       tat:"",              own:"Praveen",                            tm:"",                                              ag:false, pri:"Medium" },
+  { mo:"September", th:"Sponsorships",     ac:"Superstar brands",                                   tat:"",              own:"Praveen",                            tm:"",                                              ag:false, pri:"Medium" },
+  { mo:"September", th:"Sponsorships",     ac:"Brand Blockbuster",                                  tat:"",              own:"Praveen",                            tm:"",                                              ag:false, pri:"Medium" },
+  { mo:"September", th:"Bank Team",        ac:"Bank offer confirmation",                            tat:"Sep 1",         own:"Radhika & PBO",                      tm:"Azhar, Harsha",                                 ag:false, pri:"High"   },
+  { mo:"September", th:"Bank Team",        ac:"Bank creative assets & communications",              tat:"Sep 10",        own:"Radhika & PBO",                      tm:"Azhar, Harsha",                                 ag:false, pri:"High",  isNew:true },
+  { mo:"September", th:"Go-Live Prep",     ac:"Pre-live QA & asset checklist",                      tat:"Sep 25",        own:"Diptanu / Nidhesh",                  tm:"All teams",                                     ag:false, pri:"High",  isNew:true },
+  { mo:"September", th:"Go-Live Prep",     ac:"Staging review & sign-off",                          tat:"Sep 28",        own:"Diptanu / Nidhesh / Venkat",         tm:"Radhika & Team",                                ag:false, pri:"High",  isNew:true },
+
+  // ── OCTOBER ──
+  { mo:"October", th:"Sale Go-Live",       ac:"BBD sale live monitoring",                           tat:"Oct TBD",       own:"Diptanu / Nidhesh",                  tm:"All teams",                                     ag:true,  pri:"High",  isNew:true },
+  { mo:"October", th:"Sale Go-Live",       ac:"Real-time issues & hotfixes",                        tat:"Oct TBD",       own:"Diptanu / Nidhesh / Venkat",         tm:"All teams",                                     ag:false, pri:"High",  isNew:true },
+  { mo:"October", th:"Thank You Page",     ac:"Thank you page design & go-live",                    tat:"",              own:"Diptanu / Nidhesh",                  tm:"",                                              ag:false, pri:"Medium" },
+  { mo:"October", th:"Big Diwali Sale",    ac:"Diwali sale brief & scoping",                        tat:"",              own:"Diptanu / Nidhesh",                  tm:"",                                              ag:false, pri:"High"   },
+  { mo:"October", th:"Big Diwali Sale",    ac:"KV for Diwali sale",                                 tat:"",              own:"Diptanu / Nidhesh",                  tm:"Aneesh pod",                                    ag:true,  pri:"High"   },
+  { mo:"October", th:"Retrospective",      ac:"BBD 2026 retrospective — wins & learnings",          tat:"Oct 31",        own:"Diptanu / Nidhesh / Venkat",         tm:"One design team",                               ag:false, pri:"Medium", isNew:true },
+];
+
+// Add state to each row
+RAW.forEach((d, i) => {
+  d.id = i;
+  d.status = "NS";
+  d.pct = 0;
+  d.notes = "";
+  d.link = "";
+});
+
+// ─── Populate theme filter ────────────────────
+const themes = [...new Set(RAW.map(d => d.th))].sort();
+const fTheme = document.getElementById("fTheme");
+themes.forEach(t => { const o = document.createElement("option"); o.textContent = t; fTheme.appendChild(o); });
+
+// ─── Stats ───────────────────────────────────
+function computeStats(rows) {
+  const counts = { NS:0, IP:0, RV:0, DN:0, BL:0 };
+  rows.forEach(d => counts[d.status]++);
+  return counts;
+}
+
+function renderStats(all) {
+  const c = computeStats(all);
+  const total = all.length;
+  const donePct = total ? Math.round(c.DN / total * 100) : 0;
+
+  document.getElementById("statsBar").innerHTML = `
+    <div class="stat stat-total"><div class="dot" style="background:#bbb"></div>Total: ${total}</div>
+    <div class="stat stat-done"><div class="dot" style="background:#15803d"></div>Done: ${c.DN} (${donePct}%)</div>
+    <div class="stat stat-progress"><div class="dot" style="background:#1d4ed8"></div>In Progress: ${c.IP}</div>
+    <div class="stat stat-review"><div class="dot" style="background:#854d0e"></div>Review: ${c.RV}</div>
+    <div class="stat stat-blocked"><div class="dot" style="background:#b91c1c"></div>Blocked: ${c.BL}</div>
+    <div class="stat stat-nostart"><div class="dot" style="background:#999"></div>Not Started: ${c.NS}</div>
+  `;
+
+  document.getElementById("overallPct").textContent = donePct + "%";
+  document.getElementById("bigBar").style.width = donePct + "%";
+  document.getElementById("bigPct").textContent = donePct + "%";
+}
+
+// ─── Render table ─────────────────────────────
+const MONTHS = ["June","July","August","September","October"];
+
+function statusLabel(k) { return STATUSES[k]; }
+
+function renderTable(filtered) {
+  const container = document.getElementById("container");
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty">No tasks match the selected filters.</div>';
+    return;
+  }
+
+  let html = "";
+  MONTHS.forEach(mo => {
+    const rows = filtered.filter(d => d.mo === mo);
+    if (!rows.length) return;
+
+    const done = rows.filter(d => d.status === "DN").length;
+    const pct = Math.round(done / rows.length * 100);
+
+    html += `
+      <div class="month-block">
+        <div class="month-header">
+          <span class="month-name">${mo} 2026</span>
+          <div class="month-meta">
+            ${done}/${rows.length} done &nbsp;
+            <div class="month-bar"><div class="month-bar-fill" style="width:${pct}%"></div></div>
+            &nbsp;${pct}%
+          </div>
+        </div>
+        <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:100px">Theme</th>
+              <th style="width:210px">Action Item</th>
+              <th style="width:88px">TAT</th>
+              <th style="width:130px">Core Owner</th>
+              <th style="width:150px">Design Team</th>
+              <th style="width:54px">Agency</th>
+              <th style="width:62px">Priority</th>
+              <th style="width:122px">Status</th>
+              <th style="width:62px">% Done</th>
+              <th style="width:140px">Notes / Risk</th>
+              <th style="width:120px">Drive Link</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    let prevTheme = null;
+    rows.forEach(d => {
+      const themeCell = d.th !== prevTheme
+        ? `<td class="td-theme" rowspan="${rows.filter(r=>r.th===d.th).length}">${d.th}</td>`
+        : "";
+      prevTheme = d.th;
+      const newTag = d.isNew ? `<span class="new-tag">new</span>` : "";
+
+      html += `
+        <tr id="r${d.id}" data-status="${d.status}">
+          ${themeCell}
+          <td class="td-action"><textarea class="edit-ta" data-id="${d.id}" data-field="ac" onchange="updateField(this)">${d.ac}</textarea>${newTag}</td>
+          <td class="td-tat"><input class="edit-in" data-id="${d.id}" data-field="tat" value="${d.tat}" onchange="updateField(this)"></td>
+          <td class="td-owner"><input class="edit-in" data-id="${d.id}" data-field="own" value="${d.own}" onchange="updateField(this)"></td>
+          <td class="td-team"><textarea class="edit-ta" data-id="${d.id}" data-field="tm" onchange="updateField(this)">${d.tm}</textarea></td>
+          <td style="text-align:center">${d.ag ? '<span class="agency-yes">Yes</span>' : ''}</td>
+          <td><span class="pri pri-${d.pri}">${d.pri}</span></td>
+          <td>
+            <select class="status-sel ${STATUS_CLASS[d.status]}" data-id="${d.id}" onchange="updateStatus(this)">
+              <option value="NS"${d.status==="NS"?" selected":""}>Not Started</option>
+              <option value="IP"${d.status==="IP"?" selected":""}>In Progress</option>
+              <option value="RV"${d.status==="RV"?" selected":""}>Review</option>
+              <option value="DN"${d.status==="DN"?" selected":""}>Done</option>
+              <option value="BL"${d.status==="BL"?" selected":""}>Blocked</option>
+            </select>
+          </td>
+          <td>
+            <select class="pct-sel" data-id="${d.id}" onchange="updatePct(this)">
+              ${[0,25,50,75,100].map(p=>`<option value="${p}"${d.pct===p?" selected":""}>${p}%</option>`).join("")}
+            </select>
+          </td>
+          <td><textarea class="notes-ta" data-id="${d.id}" onchange="RAW[+this.dataset.id].notes=this.value" placeholder="Add notes…">${d.notes}</textarea></td>
+          <td><input class="link-in" type="text" data-id="${d.id}" value="${d.link}" onchange="RAW[+this.dataset.id].link=this.value" placeholder="Paste Drive link…"></td>
+        </tr>
+      `;
+    });
+
+    html += "</tbody></table></div></div>";
+  });
+
+  container.innerHTML = html;
+}
+
+// ─── Updates ─────────────────────────────────
+function updateField(el) {
+  RAW[+el.dataset.id][el.dataset.field] = el.value;
+}
+
+function updateStatus(sel) {
+  const id = +sel.dataset.id;
+  RAW[id].status = sel.value;
+  sel.className = "status-sel " + STATUS_CLASS[sel.value];
+  render();
+}
+
+function updatePct(sel) {
+  const id = +sel.dataset.id;
+  RAW[id].pct = +sel.value;
+  // auto-advance status
+  if (RAW[id].pct === 100 && RAW[id].status !== "DN") {
+    RAW[id].status = "RV"; // move to Review when 100%
+  } else if (RAW[id].pct > 0 && RAW[id].status === "NS") {
+    RAW[id].status = "IP";
+  }
+  render();
+}
+
+// ─── Filters & render ─────────────────────────
+function render() {
+  const mo = document.getElementById("fMonth").value;
+  const st = document.getElementById("fStatus").value;
+  const pr = document.getElementById("fPriority").value;
+  const th = document.getElementById("fTheme").value;
+
+  let f = RAW;
+  if (mo) f = f.filter(d => d.mo === mo);
+  if (st) f = f.filter(d => d.status === st);
+  if (pr) f = f.filter(d => d.pri === pr);
+  if (th) f = f.filter(d => d.th === th);
+
+  renderTable(f);
+  renderStats(RAW); // always show global stats
+}
+
+function resetFilters() {
+  ["fMonth","fStatus","fPriority","fTheme"].forEach(id => document.getElementById(id).value = "");
+  render();
+}
+
+// ─── GitHub backend ──────────────────────────
+const GH = {
+  owner: "Naveen4588",
+  repo:  "bbd-roadmap-2026",
+  file:  "data.json",
+  branch:"main"
+};
+const RAW_URL = `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${GH.branch}/${GH.file}`;
+
+function getSaveKey() {
+  let key = localStorage.getItem("bbd2026_savekey");
+  if (!key) {
+    key = prompt("Enter the Save Key (ask the roadmap admin for it):");
+    if (key) localStorage.setItem("bbd2026_savekey", key.trim());
+  }
+  return key ? key.trim() : null;
+}
+
+async function loadFromGitHub() {
+  document.body.insertAdjacentHTML("afterbegin", `<div class="loading-overlay" id="loadingOverlay">Loading roadmap data…</div>`);
+  try {
+    const r = await fetch(RAW_URL + "?t=" + Date.now());
+    if (r.ok) {
+      const saved = await r.json();
+      saved.forEach(s => {
+        const d = RAW[s.id];
+        if (!d) return;
+        d.ac=s.ac??d.ac; d.tat=s.tat??d.tat; d.own=s.own??d.own; d.tm=s.tm??d.tm;
+        d.status=s.status??d.status; d.pct=s.pct??d.pct; d.notes=s.notes??d.notes; d.link=s.link??d.link;
+      });
+      setSyncStatus("Last synced: " + new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}));
+    }
+  } catch(e) { console.warn("GitHub load failed, using defaults"); }
+  document.getElementById("loadingOverlay")?.remove();
+}
+
+async function saveToGitHub() {
+  const key = getSaveKey();
+  if (!key) return;
+  const btn = document.getElementById("saveBtn");
+  btn.textContent = "Saving…"; btn.disabled = true;
+  try {
+    const metaR = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.file}`,
+      { headers: { Authorization: `token ${key}`, Accept: "application/vnd.github.v3+json" } });
+    const meta = await metaR.json();
+    if (!meta.sha) throw new Error(meta.message || "Could not get file info");
+    const state = RAW.map(d=>({id:d.id,ac:d.ac,tat:d.tat,own:d.own,tm:d.tm,status:d.status,pct:d.pct,notes:d.notes,link:d.link}));
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(state,null,2))));
+    const putR = await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.file}`, {
+      method: "PUT",
+      headers: { Authorization: `token ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Update roadmap " + new Date().toISOString().slice(0,16), content, sha: meta.sha })
+    });
+    if (putR.ok) {
+      btn.textContent = "✅ Saved!";
+      setSyncStatus("Saved at " + new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}));
+      setTimeout(()=>{ btn.textContent="💾 Save Online"; btn.disabled=false; }, 2500);
+    } else {
+      const err = await putR.json();
+      if ((err.message||"").toLowerCase().includes("bad credentials")) {
+        localStorage.removeItem("bbd2026_savekey");
+        alert("❌ Invalid Save Key. Please try again.");
+      } else if ((err.message||"").includes("409") || (err.message||"").toLowerCase().includes("conflict")) {
+        alert("⚠️ Someone else saved just now. Please refresh the page and re-enter your changes.");
+      } else {
+        alert("❌ Save failed: " + (err.message||"Unknown error"));
+      }
+      btn.textContent = "💾 Save Online"; btn.disabled = false;
+    }
+  } catch(e) {
+    alert("❌ Network error. Check your connection and try again.");
+    btn.textContent = "💾 Save Online"; btn.disabled = false;
+  }
+}
+
+function setSyncStatus(msg) {
+  document.getElementById("syncStatus").textContent = msg;
+}
+
+// ─── Persistence (localStorage) ──────────────
+const LS_KEY = "bbd2026_state";
+
+function saveState() {
+  const state = RAW.map(d => ({ id:d.id, ac:d.ac, tat:d.tat, own:d.own, tm:d.tm, status:d.status, pct:d.pct, notes:d.notes, link:d.link }));
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e) {}
+  const lbl = document.getElementById("saveLabel");
+  lbl.textContent = "Saved " + new Date().toLocaleTimeString("en-IN", {hour:"2-digit", minute:"2-digit"});
+  setTimeout(() => { lbl.textContent = ""; }, 3000);
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+    if (!saved) return;
+    saved.forEach(s => {
+      const d = RAW[s.id];
+      if (!d) return;
+      d.ac = s.ac ?? d.ac; d.tat = s.tat ?? d.tat;
+      d.own = s.own ?? d.own; d.tm = s.tm ?? d.tm;
+      d.status = s.status ?? d.status; d.pct = s.pct ?? d.pct;
+      d.notes = s.notes ?? d.notes; d.link = s.link ?? d.link;
+    });
+  } catch(e) {}
+}
+
+function exportJSON() {
+  const state = RAW.map(d => ({ id:d.id, ac:d.ac, tat:d.tat, own:d.own, tm:d.tm, status:d.status, pct:d.pct, notes:d.notes, link:d.link }));
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "BBD2026_Roadmap_" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+}
+
+function importJSON(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const saved = JSON.parse(e.target.result);
+      saved.forEach(s => {
+        const d = RAW[s.id];
+        if (!d) return;
+        d.ac = s.ac ?? d.ac; d.tat = s.tat ?? d.tat;
+        d.own = s.own ?? d.own; d.tm = s.tm ?? d.tm;
+        d.status = s.status ?? d.status; d.pct = s.pct ?? d.pct;
+        d.notes = s.notes ?? d.notes; d.link = s.link ?? d.link;
+      });
+      saveState();
+      render();
+      alert("✅ Roadmap imported successfully!");
+    } catch(err) { alert("❌ Invalid file. Please import a BBD 2026 JSON export."); }
+  };
+  reader.readAsText(file);
+  evt.target.value = "";
+}
+
+// Auto-save on any field/status/pct change — patch existing update functions
+const _origUpdateField = updateField;
+updateField = el => { _origUpdateField(el); saveState(); };
+
+const _origUpdateStatus = updateStatus;
+updateStatus = sel => { _origUpdateStatus(sel); saveState(); };
+
+const _origUpdatePct = updatePct;
+updatePct = sel => { _origUpdatePct(sel); saveState(); };
+
+// ─── Init ────────────────────────────────────
+document.getElementById("lastUpdated").textContent =
+  new Date().toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" });
+
+(async () => {
+  await loadFromGitHub();
+  loadState(); // overlay with any local unsaved edits
+  render();
+})();
+</script>
+</body>
+</html>
