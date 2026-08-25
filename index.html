@@ -611,6 +611,58 @@ function setSyncStatus(msg) {
   document.getElementById("syncStatus").textContent = msg;
 }
 
+// ─── Auto-poll for changes every 10s ─────────
+let _etag = null;
+let _firstPoll = true;
+
+async function pollForChanges() {
+  try {
+    const headers = { Accept: "application/vnd.github.v3+json" };
+    if (_etag) headers["If-None-Match"] = _etag;
+
+    const r = await fetch(
+      `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.file}`,
+      { headers }
+    );
+
+    if (r.status === 304) {
+      // no change — nothing to do
+    } else if (r.ok) {
+      const newEtag = r.headers.get("ETag");
+      const hasChanged = newEtag && newEtag !== _etag;
+      _etag = newEtag || _etag;
+
+      if (!_firstPoll && hasChanged) {
+        // Remote data changed — reload silently
+        const meta = await r.json();
+        const saved = JSON.parse(atob(meta.content.replace(/\n/g, "")));
+        saved.forEach(s => {
+          const d = RAW[s.id];
+          if (!d) return;
+          d.ac=s.ac??d.ac; d.tat=s.tat??d.tat; d.own=s.own??d.own; d.tm=s.tm??d.tm;
+          d.status=s.status??d.status; d.pct=s.pct??d.pct; d.notes=s.notes??d.notes; d.link=s.link??d.link;
+        });
+        render();
+        setSyncStatus("Auto-synced at " + new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}));
+        showSyncBanner();
+      }
+      _firstPoll = false;
+    }
+  } catch(e) {}
+  setTimeout(pollForChanges, 10000);
+}
+
+function showSyncBanner() {
+  const existing = document.getElementById("syncBanner");
+  if (existing) existing.remove();
+  const b = document.createElement("div");
+  b.id = "syncBanner";
+  b.style.cssText = "position:fixed;bottom:20px;right:20px;background:#1a7a3c;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2)";
+  b.textContent = "✅ Roadmap updated by a teammate";
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 4000);
+}
+
 // ─── Persistence (localStorage) ──────────────
 const LS_KEY = "bbd2026_state";
 
@@ -686,8 +738,9 @@ document.getElementById("lastUpdated").textContent =
 
 (async () => {
   await loadFromGitHub();
-  loadState(); // overlay with any local unsaved edits
+  loadState();
   render();
+  setTimeout(pollForChanges, 10000); // start polling after 10s
 })();
 </script>
 </body>
