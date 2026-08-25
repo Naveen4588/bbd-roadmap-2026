@@ -548,9 +548,14 @@ function getSaveKey() {
 async function loadFromGitHub() {
   document.body.insertAdjacentHTML("afterbegin", `<div class="loading-overlay" id="loadingOverlay">Loading roadmap data…</div>`);
   try {
-    const r = await fetch(RAW_URL + "?t=" + Date.now());
+    // Use Contents API (not raw URL) — always returns latest, no CDN cache
+    const r = await fetch(
+      `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.file}`,
+      { headers: { Accept: "application/vnd.github.v3+json", "Cache-Control": "no-cache" } }
+    );
     if (r.ok) {
-      const saved = await r.json();
+      const meta = await r.json();
+      const saved = JSON.parse(atob(meta.content.replace(/\n/g, "")));
       saved.forEach(s => {
         const d = RAW[s.id];
         if (!d) return;
