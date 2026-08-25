@@ -61,8 +61,10 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f4f4; color: #
 .btn-print  { margin-left: auto; background: #1a1a1a !important; color: #fff !important; border-color: #1a1a1a !important; }
 .btn-export { background: #e8f5e9 !important; color: #1a7a3c !important; border-color: #a5d6a7 !important; font-weight: 600; }
 .btn-import { padding: 5px 10px; border: 1px solid #bbdefb; border-radius: 6px; font-size: 12px; cursor: pointer; background: #e3f2fd; color: #1a56c4; font-weight: 600; }
-.btn-save   { background: #F7971E !important; color: #fff !important; border-color: #e08010 !important; font-weight: 700; font-size: 13px; padding: 6px 16px !important; }
+.btn-save    { background: #F7971E !important; color: #fff !important; border-color: #e08010 !important; font-weight: 700; font-size: 13px; padding: 6px 16px !important; }
 .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-refresh { background: #e3f2fd !important; color: #1a56c4 !important; border-color: #90caf9 !important; font-weight: 700; }
+.btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
 .sync-status { font-size: 11px; color: #888; margin-left: 6px; }
 .loading-overlay {
   position: fixed; inset: 0; background: rgba(255,255,255,0.85);
@@ -243,6 +245,7 @@ footer {
   <button class="btn-reset" onclick="resetFilters()">Reset</button>
   <button class="btn-print" onclick="window.print()">Print / Export PDF</button>
   <button id="saveBtn" class="btn-save" onclick="saveToGitHub()">💾 Save Online</button>
+  <button id="refreshBtn" class="btn-refresh" onclick="manualRefresh()">🔄 Refresh</button>
   <span id="syncStatus" class="sync-status"></span>
 </div>
 
@@ -609,6 +612,14 @@ async function saveToGitHub() {
 
 function setSyncStatus(msg) {
   document.getElementById("syncStatus").textContent = msg;
+}
+
+async function manualRefresh() {
+  const btn = document.getElementById("refreshBtn");
+  btn.textContent = "Refreshing…"; btn.disabled = true;
+  await loadFromGitHub();
+  render();
+  btn.textContent = "🔄 Refresh"; btn.disabled = false;
 }
 
 // ─── Auto-poll for changes every 10s ─────────
